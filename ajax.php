@@ -3,7 +3,7 @@ header('Content-Type: application/json');
 set_time_limit(600); 
 
 $clesAPI = [
-    '1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+  '1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     '2xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
     '3xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 ];
@@ -15,7 +15,7 @@ $email = filter_var($_REQUEST['email'] ?? '', FILTER_SANITIZE_EMAIL);
 $pass = $_REQUEST['password'] ?? '';
 $userKey = md5($email . $pass); 
 $cheminUser = $dossierBase . $userKey;
-$urlUser = 'uploads/' . $userKey; // Pour l'affichage HTML
+$urlUser = 'uploads/' . $userKey;
 $action = $_REQUEST['action'] ?? '';
 
 if ($action === 'auth') {
@@ -31,9 +31,7 @@ if ($action === 'auth') {
 if ($action === 'charger_archives') {
     $archives = [];
     if (file_exists($cheminUser)) {
-        foreach (glob("$cheminUser/*.json") as $f) {
-            $archives[] = json_decode(file_get_contents($f), true);
-        }
+        foreach (glob("$cheminUser/*.json") as $f) $archives[] = json_decode(file_get_contents($f), true);
         usort($archives, function($a, $b) { return strtotime($b['date_tri']) - strtotime($a['date_tri']); });
     }
     echo json_encode($archives);
@@ -45,35 +43,48 @@ if ($action === 'analyser_image') {
     $apiKey = $clesAPI[$indexCle % count($clesAPI)];
     $file = $_FILES['image'];
     
-    // Sauvegarde physique de l'image pour l'affichage futur
-    $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-    $nomImagePhysique = uniqid() . '.' . $extension;
-    $cheminImagePhysique = $cheminUser . '/' . $nomImagePhysique;
-    move_uploaded_file($file['tmp_name'], $cheminImagePhysique);
+    $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+    $imgNom = uniqid() . '.' . $ext;
+    $imgChemin = $cheminUser . '/' . $imgNom;
+    move_uploaded_file($file['tmp_name'], $imgChemin);
 
-    $imgData = base64_encode(file_get_contents($cheminImagePhysique));
-    $mime = $file['type'];
+    $imgData = base64_encode(file_get_contents($imgChemin));
+$prompt = "Tu es une entité hybride : Expert d'art international chez Christie's, Sémiologue et Philosophe de l'esthétique. Ton regard est celui d'un commissaire-priseur doté d'une culture encyclopédique.
 
-    $prompt = "Tu es un Maître Critique d'Art renommé, doté d'une sensibilité poétique et d'une expertise technique encyclopédique. 
-    Analyse cette œuvre avec une éloquence rare. Ta critique doit être une célébration vibrante structurée comme suit :
-    
-    1. EXORDE (L'Âme) : Une phrase métaphorique capturant l'essence ontologique de l'œuvre.
-    2. ARCHITECTURE VISUELLE : Analyse la structure, l'équilibre des masses, la dynamique des lignes et la profondeur de champ.
-    3. ALCHIMIE CHROMATIQUE : Explore la psychologie de la palette utilisée, le dialogue entre les tons et la gestion de la luminance (clair-obscur).
-    4. SÉMIOTIQUE ET SYMBOLES : Décrypte les messages invisibles et ce que l'œuvre raconte sur la condition humaine ou l'univers.
-    5. VERDICT DE L'EXPERT : Une conclusion élogieuse sur la singularité du geste artistique.
-    
-    Utilise un ton noble, inspirant et des termes académiques (ex: sfumato, impasto, tension narrative, chromatisme, onirisme). Termine par une 'Note d'Excellence' sur 10.";
+    STRUCTURE DE TON EXPERTISE :
+
+    # I. PHÉNOMÉNOLOGIE VISUELLE (Ce que l'on voit)
+    - Analyse descriptive radicale : Décompose l'image par strates (Premier plan, arrière-plan, focale).
+    - Morphologie de la lumière : Étude de la source lumineuse, de l'incidence des ombres et de la température chromatique.
+    - Gestualité : Analyse de la texture perçue (touche, grain, pixellisation, empâtements) et de la tension compositionnelle.
+
+    # II. ANALYSE INTELLECTUELLE & ARCHÉTYPALE
+    - Ontologie : Rattache l'œuvre aux fondements de l'histoire de l'art (du Paléolithique à la Post-Modernité).
+    - Dialogue philosophique : Invoque la pensée de maîtres (Benjamin, Adorno, Baudrillard ou Foucault) pour décrypter le message caché.
+    - Mythologie & Psychologie : Quelle pulsion humaine ou quelle figure mythique est ici réactivée ?
+
+    # III. ESTIMATION & COTATION PRÉVISIONNELLE
+    - Dimensions présumées : Estime la taille physique de l'œuvre selon sa densité visuelle et son sujet.
+    - Valeur de marché : Si cet artiste était coté sur le marché international (Artprice/Sotheby's), établis une estimation basse et une estimation haute en Euros (€).
+    - Justification de la cote : Analyse la rareté du sujet et la signature stylistique pour justifier ce prix.
+
+    # IV. PROPOSITION D'EXPOSITION & ARGUMENTAIRE DE VENTE
+    - **Titre de l'Exposition** : (Titre métaphysique et curatorial).
+    - **Motivation des Collectionneurs** : Pourquoi cette œuvre est-elle un 'must-have' ? Explique pourquoi la demande pour ce type d'œuvre est en explosion. 
+    - **Scénographie & Placement** : Comment exposer l'œuvre pour maximiser son aura et sa valeur perçue.
+    - **Argumentaire de Marché** : Convainc le collectionneur que cette pièce est un actif tangible majeur avec un fort potentiel de plus-value.
+
+    # V. CODEX GÉNÉRATIF (Prompt IA)
+    - Rédige un prompt ultra-sophistiqué en anglais pour reproduire cette esthétique exacte.
+
+    Ton ton doit être celui d'une autorité incontestée : savant, complexe, utilisant un jargon technique précis (e.g., anamorphose, clair-obscur, paradigme, spéculatif, valeur fiduciaire).";
 
     $payload = [
         'model' => 'pixtral-12b-2409',
-        'messages' => [[
-            'role' => 'user',
-            'content' => [
-                ['type' => 'text', 'text' => $prompt],
-                ['type' => 'image_url', 'image_url' => ['url' => "data:$mime;base64,$imgData"]]
-            ]
-        ]]
+        'messages' => [['role' => 'user', 'content' => [
+            ['type' => 'text', 'text' => $prompt],
+            ['type' => 'image_url', 'image_url' => ['url' => "data:".$file['type'].";base64,$imgData"]]
+        ]]]
     ];
 
     $ch = curl_init('https://api.mistral.ai/v1/chat/completions');
@@ -89,18 +100,15 @@ if ($action === 'analyser_image') {
     curl_close($ch);
 
     if (isset($data['choices'][0]['message']['content'])) {
-        $saveData = [
+        $resultat = [
             'nom' => $file['name'],
-            'url_img' => $urlUser . '/' . $nomImagePhysique,
-            'analyse' => $data['choices'][0]['message']['content'],
+            'url_img' => $urlUser . '/' . $imgNom,
+            'analyse_complete' => $data['choices'][0]['message']['content'],
             'date' => date('d/m/Y H:i'),
             'date_tri' => date('Y-m-d H:i:s')
         ];
-        file_put_contents($cheminUser . '/' . uniqid() . '.json', json_encode($saveData));
-        echo json_encode($saveData);
-    } else {
-        http_response_code(500);
-        echo json_encode(['erreur' => 'Erreur API']);
+        file_put_contents($cheminUser . '/' . uniqid() . '.json', json_encode($resultat));
+        echo json_encode($resultat);
     }
     exit;
 }
